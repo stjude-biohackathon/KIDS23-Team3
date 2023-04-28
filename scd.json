@@ -1,0 +1,454 @@
+{
+  "name": "SCD",
+  "remarks": [
+    "Ragha Srinivasan ",
+    "St. Jude Children's Research Hospital",
+    "April 19, 2023",
+    "* Test data in OMOP CDM format generation for KIDS23 BioHackathon **",
+    "",
+    "Synthetic Data Generation: ",
+    "Establishment of a Synthetic Longitudinal Clinical Cohort of Pediatric and Adolescent Patients with Sickle Cell Disease (SCD)",
+    "Patient Age Birth through 18 years",
+    "",
+    "List all SCD patients based on most prevalent Sickle cell genotype is based on the diagnosis in the medical record.",
+    "",
+    "References",
+    "",
+    "SNOMED CT BROWSER https://browser.ihtsdotools.org/?",
+    "",
+    "Synthea New Module Builder ",
+    "https://synthetichealth.github.io/synthea/#technology-landing",
+    "",
+    "synthetichealth/synthea",
+    "Synthea contains a framework for defining modules using JSON. These JSON modules describe a progression of states and the transitions between them. On each Synthea generation time-step, the generic framework processes states one at a time to trigger conditions, encounters, medications, and other clinical events. ",
+    "he Module Builder is a web interface for clinicians and other healthcare professionals to design Synthea modules with no programming experience required. A short video introduction to the Module Builder is available on YouTube (linked below), and a Tutorial is available on this Wiki.",
+    "https://github.com/synthetichealth/synthea/wiki/Generic-Module-Framework",
+    "",
+    "",
+    "Thank you."
+  ],
+  "states": {
+    "Initial": {
+      "type": "Initial",
+      "direct_transition": "Pediatric & Adoloscent"
+    },
+    "Terminal": {
+      "type": "Terminal"
+    },
+    "Sickle Cell Disease": {
+      "type": "Simple",
+      "distributed_transition": [
+        {
+          "transition": "Sickle_Cell_Disease_1",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Sickle_Cell_Disease_2",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Sickle_Cell_Disease_3",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Sickle_Cell_Disease_4",
+          "distribution": 0.25
+        }
+      ]
+    },
+    "Pediatric & Adoloscent": {
+      "type": "Delay",
+      "distribution": {
+        "kind": "UNIFORM",
+        "parameters": {
+          "high": 220,
+          "low": 1
+        }
+      },
+      "unit": "months",
+      "direct_transition": "Wellness Encounter"
+    },
+    "Wellness Encounter": {
+      "type": "Encounter",
+      "reason": "",
+      "telemedicine_possibility": "none",
+      "wellness": true,
+      "direct_transition": "CBC_with_Low_Hemoglobin"
+    },
+    "Penicillin Check": {
+      "type": "Simple",
+      "conditional_transition": [
+        {
+          "transition": "Daily Pencillin",
+          "condition": {
+            "condition_type": "And",
+            "conditions": [
+              {
+                "condition_type": "Age",
+                "operator": "<=",
+                "quantity": 5,
+                "unit": "years",
+                "value": 0
+              },
+              {
+                "condition_type": "Not",
+                "condition": {
+                  "condition_type": "Active Medication",
+                  "codes": [
+                    {
+                      "system": "RxNorm",
+                      "code": 834061,
+                      "display": "penicillin V potassium 250 MG Oral Tablet"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "transition": "Stop Pencillin",
+          "condition": {
+            "condition_type": "Age",
+            "operator": ">",
+            "quantity": 5,
+            "unit": "years"
+          }
+        }
+      ]
+    },
+    "Stop Pencillin": {
+      "type": "MedicationEnd",
+      "medication_order": "Daily Pencillin",
+      "direct_transition": "End Encounter"
+    },
+    "End Encounter": {
+      "type": "EncounterEnd",
+      "conditional_transition": [
+        {
+          "transition": "Next Wellness Encounter",
+          "condition": {
+            "condition_type": "Active Medication",
+            "codes": [
+              {
+                "system": "RxNorm",
+                "code": 834061,
+                "display": "penicillin V potassium 250 MG Oral Tablet"
+              }
+            ]
+          }
+        },
+        {
+          "transition": "Terminal"
+        }
+      ]
+    },
+    "Next Wellness Encounter": {
+      "type": "Encounter",
+      "reason": "",
+      "telemedicine_possibility": "none",
+      "direct_transition": "Penicillin Check",
+      "wellness": true
+    },
+    "Daily Pencillin": {
+      "type": "MedicationOrder",
+      "codes": [
+        {
+          "system": "RxNorm",
+          "code": 834061,
+          "display": "penicillin V potassium 250 MG Oral Tablet"
+        }
+      ],
+      "reason": "scd_diagnosis",
+      "chronic": true,
+      "prescription": {
+        "dosage": {
+          "amount": 1,
+          "frequency": 1,
+          "period": 1,
+          "unit": "days"
+        },
+        "duration": {
+          "quantity": 1,
+          "unit": "days"
+        },
+        "as_needed": true
+      },
+      "direct_transition": "End Encounter",
+      "assign_to_attribute": ""
+    },
+    "Daily Folic Acid": {
+      "type": "MedicationOrder",
+      "codes": [
+        {
+          "system": "RxNorm",
+          "code": 285122,
+          "display": "folic acid 0.8 MG Oral Tablet [Folacin]"
+        }
+      ],
+      "reason": "scd_diagnosis",
+      "chronic": true,
+      "prescription": {
+        "dosage": {
+          "amount": 1,
+          "frequency": 1,
+          "period": 1,
+          "unit": "days"
+        },
+        "duration": {
+          "quantity": 1,
+          "unit": "days"
+        },
+        "as_needed": true
+      },
+      "direct_transition": "Penicillin Check"
+    },
+    "CBC_with_Low_Hemoglobin": {
+      "type": "DiagnosticReport",
+      "number_of_observations": 4,
+      "codes": [
+        {
+          "system": "LOINC",
+          "code": "58410-2",
+          "display": "CBC panel - Blood by Automated count"
+        }
+      ],
+      "observations": [
+        {
+          "category": "laboratory",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "6690-2",
+              "display": "Leukocytes [#/volume] in Blood by Automated count"
+            }
+          ],
+          "unit": "10*3/uL",
+          "range": {
+            "low": 3.5,
+            "high": 10.5
+          }
+        },
+        {
+          "category": "laboratory",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "789-8",
+              "display": "Erythrocytes [#/volume] in Blood by Automated count"
+            }
+          ],
+          "unit": "10*6/uL",
+          "range": {
+            "low": 3.9,
+            "high": 5.5
+          }
+        },
+        {
+          "category": "laboratory",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "718-7",
+              "display": "Hemoglobin [Mass/volume] in Blood"
+            }
+          ],
+          "unit": "g/dL",
+          "range": {
+            "low": 6,
+            "high": 8
+          }
+        },
+        {
+          "category": "laboratory",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "4544-3",
+              "display": "Hematocrit [Volume Fraction] of Blood by Automated count"
+            }
+          ],
+          "unit": "%",
+          "range": {
+            "low": 35,
+            "high": 50
+          }
+        },
+        {
+          "category": "laboratory",
+          "unit": "fL",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "787-2",
+              "display": "MCV [Entitic volume] by Automated count"
+            }
+          ],
+          "range": {
+            "low": 80,
+            "high": 95
+          }
+        },
+        {
+          "category": "laboratory",
+          "unit": "pg",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "785-6",
+              "display": "MCH [Entitic mass] by Automated count"
+            }
+          ],
+          "range": {
+            "low": 27,
+            "high": 33
+          }
+        },
+        {
+          "category": "laboratory",
+          "unit": "g/dL",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "786-4",
+              "display": "MCHC [Mass/volume] by Automated count"
+            }
+          ],
+          "range": {
+            "low": 33,
+            "high": 36
+          }
+        },
+        {
+          "category": "laboratory",
+          "unit": "fL",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "21000-5",
+              "display": "Erythrocyte distribution width [Entitic volume] by Automated count"
+            }
+          ],
+          "range": {
+            "low": 39,
+            "high": 46
+          }
+        },
+        {
+          "category": "laboratory",
+          "unit": "10*3/uL",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "777-3",
+              "display": "Platelets [#/volume] in Blood by Automated count"
+            }
+          ],
+          "range": {
+            "low": 150,
+            "high": 450
+          }
+        },
+        {
+          "category": "laboratory",
+          "unit": "fL",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "32207-3",
+              "display": "Platelet distribution width [Entitic volume] in Blood by Automated count"
+            }
+          ],
+          "range": {
+            "low": 150,
+            "high": 520
+          }
+        },
+        {
+          "category": "laboratory",
+          "unit": "fL",
+          "codes": [
+            {
+              "system": "LOINC",
+              "code": "32623-1",
+              "display": "Platelet mean volume [Entitic volume] in Blood by Automated count"
+            }
+          ],
+          "range": {
+            "low": 9.4,
+            "high": 12.3
+          }
+        }
+      ],
+      "direct_transition": "Sickling Test"
+    },
+    "Sickle_Cell_Disease_2": {
+      "type": "ConditionOnset",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 35434009,
+          "display": "Sickle cell-hemoglobin C disease (disorder)"
+        }
+      ],
+      "assign_to_attribute": "scd_diagnosis",
+      "direct_transition": "Daily Folic Acid"
+    },
+    "Sickle_Cell_Disease_3": {
+      "type": "ConditionOnset",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 417357006,
+          "display": "Sickling disorder due to hemoglobin S (disorder)"
+        }
+      ],
+      "assign_to_attribute": "scd_diagnosis",
+      "direct_transition": "Daily Folic Acid"
+    },
+    "Sickle_Cell_Disease_4": {
+      "type": "ConditionOnset",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 127042006,
+          "display": "Sickle cell beta plus thalassemia (disorder)"
+        }
+      ],
+      "assign_to_attribute": "scd_diagnosis",
+      "direct_transition": "Daily Folic Acid"
+    },
+    "Sickle_Cell_Disease_1": {
+      "type": "ConditionOnset",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 127040003,
+          "display": "Sickle cell-hemoglobin SS disease (disorder)"
+        }
+      ],
+      "assign_to_attribute": "scd_diagnosis",
+      "direct_transition": "Daily Folic Acid"
+    },
+    "Sickling Test": {
+      "type": "Procedure",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 252289009,
+          "display": "Sickling test (procedure)"
+        }
+      ],
+      "distribution": {
+        "kind": "UNIFORM",
+        "parameters": {
+          "high": 60,
+          "low": 30
+        }
+      },
+      "unit": "minutes",
+      "direct_transition": "Sickle Cell Disease"
+    }
+  },
+  "gmf_version": 2
+}
